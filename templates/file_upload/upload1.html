@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>다중 이미지 업로드</title>
+    <!-- Bootstrap CSS -->
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <style>
+      body {
+        background-color: #f0f4f8;
+      }
+      .upload-container {
+        background-color: white;
+        border-radius: 12px;
+        padding: 30px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      }
+      .image-preview-container {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-top: 15px;
+      }
+      .image-preview {
+        position: relative;
+        width: 150px;
+        height: 150px;
+        border: 2px dashed #ced4da;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        overflow: hidden;
+        margin-bottom: 10px;
+      }
+      .image-preview img {
+        max-width: 100%;
+        max-height: 100%;
+        object-fit: contain;
+      }
+      .remove-image {
+        position: absolute;
+        top: 5px;
+        right: 5px;
+        background-color: rgba(255, 0, 0, 0.7);
+        color: white;
+        border: none;
+        border-radius: 50%;
+        width: 25px;
+        height: 25px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        cursor: pointer;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container py-5">
+      <div class="upload-container">
+        <h2 class="text-center mb-4 text-primary">다중 이미지 업로드</h2>
+
+        <div class="row mb-3">
+          <div class="col-md-6 mb-2">
+            <div class="input-group">
+              <span class="input-group-text">너비 (픽셀)</span>
+              <input
+                type="number"
+                id="widthInput"
+                class="form-control"
+                placeholder="예: 300"
+                min="1"
+                required
+              />
+            </div>
+          </div>
+          <div class="col-md-6 mb-2">
+            <div class="input-group">
+              <span class="input-group-text">높이 (픽셀)</span>
+              <input
+                type="number"
+                id="heightInput"
+                class="form-control"
+                placeholder="예: 200"
+                min="1"
+                required
+              />
+            </div>
+          </div>
+        </div>
+
+        <div class="mb-3">
+          <input
+            type="file"
+            id="imageUpload"
+            accept="image/*"
+            class="form-control"
+            multiple
+            onchange="handleImageUpload(event)"
+          />
+        </div>
+
+        <div id="imagePreviewContainer" class="image-preview-container">
+          <!-- 업로드된 이미지 미리보기가 여기에 표시됩니다 -->
+        </div>
+
+        <div class="text-center mt-3">
+          <button
+            type="button"
+            id="uploadButton"
+            class="btn btn-primary"
+            onclick="uploadImages()"
+          >
+            이미지 업로드
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+      // 업로드할 이미지 파일들을 저장할 배열
+      let uploadedImages = [];
+
+      function handleImageUpload(event) {
+        const files = event.target.files;
+        const previewContainer = document.getElementById(
+          "imagePreviewContainer"
+        );
+        const widthInput = document.getElementById("widthInput");
+        const heightInput = document.getElementById("heightInput");
+
+        // 기존 미리보기 초기화
+        previewContainer.innerHTML = "";
+        uploadedImages = [];
+
+        for (let file of files) {
+          if (file.type.startsWith("image/")) {
+            const reader = new FileReader();
+
+            reader.onload = function (e) {
+              const previewWrapper = document.createElement("div");
+              previewWrapper.className = "image-preview";
+
+              const img = document.createElement("img");
+              img.src = e.target.result;
+
+              const removeBtn = document.createElement("button");
+              removeBtn.innerHTML = "✕";
+              removeBtn.className = "remove-image";
+              removeBtn.onclick = () => removeImage(previewWrapper, file);
+
+              previewWrapper.appendChild(img);
+              previewWrapper.appendChild(removeBtn);
+              previewContainer.appendChild(previewWrapper);
+
+              // 업로드할 이미지 배열에 추가
+              uploadedImages.push({
+                file: file,
+                width: widthInput.value || null,
+                height: heightInput.value || null,
+              });
+            };
+
+            reader.readAsDataURL(file);
+          }
+        }
+      }
+
+      function removeImage(previewElement, file) {
+        // 미리보기에서 이미지 제거
+        previewElement.remove();
+
+        // 업로드 이미지 배열에서 해당 파일 제거
+        uploadedImages = uploadedImages.filter((img) => img.file !== file);
+      }
+
+      function uploadImages() {
+        const widthInput = document.getElementById("widthInput");
+        const heightInput = document.getElementById("heightInput");
+
+        // 너비와 높이 값이 비어있으면 경고 메시지
+        if (!widthInput.value || !heightInput.value) {
+          alert("너비와 높이를 모두 입력해주세요.");
+          return;
+        }
+
+        if (uploadedImages.length === 0) {
+          alert("업로드할 이미지를 선택해주세요.");
+          return;
+        }
+
+        // FormData 객체 생성
+        const formData = new FormData();
+
+        // 각 이미지와 관련 정보 추가
+        uploadedImages.forEach((imageInfo, index) => {
+          formData.append("files", imageInfo.file);
+          formData.append(`width`, imageInfo.width);
+          formData.append(`height`, imageInfo.height);
+        });
+
+        // FastAPI 백엔드로 이미지 업로드 요청
+        fetch("http://localhost:8000/image/upload/test", {
+          method: "POST",
+          body: formData,
+        })
+          .then((response) => response.json())
+          .then((data) => {
+            alert("이미지 업로드 성공");
+            console.log(data);
+          })
+          .catch((error) => {
+            alert("이미지 업로드 중 오류 발생");
+            console.error("Error:", error);
+          });
+      }
+    </script>
+  </body>
+</html>

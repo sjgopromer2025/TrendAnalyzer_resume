@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>카테고리 찾기</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        background-color: #f9f9f9;
+        margin: 0;
+      }
+      .container {
+        background: #fff;
+        padding: 40px;
+        border-radius: 10px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        text-align: center;
+        width: 50%;
+        max-width: 600px;
+      }
+      h1 {
+        margin-bottom: 30px;
+        font-size: 2em;
+      }
+      select,
+      input,
+      button {
+        margin: 15px 0;
+        padding: 12px;
+        font-size: 1.2em;
+        border-radius: 5px;
+        border: 1px solid #ccc;
+        width: 80%;
+        box-sizing: border-box;
+      }
+      button {
+        background-color: #4caf50;
+        color: white;
+        border: none;
+        cursor: pointer;
+        width: 40%;
+      }
+      button:hover {
+        background-color: #45a049;
+      }
+      #result {
+        margin-top: 20px;
+        padding: 20px;
+        font-size: 1.2em;
+        background-color: #f1f1f1;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+        min-height: 50px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>카테고리 찾기</h1>
+      <!-- 카테고리 선택 -->
+      <select id="category">
+        <option value="">선택</option>
+        <option value="쿠팡">쿠팡</option>
+        <option value="네이버">네이버</option>
+        <option value="지마켓">지마켓</option>
+      </select>
+      <br />
+      <!-- 아이템명 입력 -->
+      <input type="text" id="itemName" placeholder="아이템명을 입력하세요" />
+      <br />
+      <!-- 찾기 버튼 -->
+      <button onclick="findCategory()">찾기</button>
+
+      <!-- 결과 표시 영역 -->
+      <div id="result">여기에 결과가 표시됩니다.</div>
+    </div>
+
+    <script>
+      function findCategory() {
+        const category = document.getElementById("category").value;
+        const itemName = document.getElementById("itemName").value.trim();
+
+        const resultDiv = document.getElementById("result");
+
+        // 오류 처리
+        if (!category) {
+          alert("카테고리를 선택해주세요!");
+          return;
+        }
+
+        if (!itemName) {
+          alert("아이템명을 입력해주세요!");
+          return;
+        }
+
+        // 결과 표시
+        resultDiv.innerHTML = `
+                <strong>선택한 카테고리:</strong> ${category} <br>
+                <strong>입력한 아이템명:</strong> ${itemName}
+            `;
+
+        try {
+          // FastAPI로 POST 요청 보내기
+          const response = fetch("http://localhost:8000/scraper/category", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              category: category,
+              item_name: itemName,
+            }),
+          })
+            .then((response) => response.json())
+            .then((data) => {
+              console.log(data);
+              // 응답 데이터를 화면에 표시
+              resultDiv.innerHTML += `<br><strong>서버 응답:</strong> <a href="${data["href"]}" target="_blank">${itemName}</a><br><strong>${data["category"]}</strong>`;
+            })
+            .catch((error) => {
+              alert("이미지 업로드 중 오류 발생");
+              console.error("Error:", error);
+            });
+        } catch (error) {
+          console.error("Error:", error);
+          resultDiv.innerHTML +=
+            "<br><strong>오류 발생:</strong> 서버와 통신 중 문제가 발생했습니다.";
+        }
+      }
+    </script>
+  </body>
+</html>
