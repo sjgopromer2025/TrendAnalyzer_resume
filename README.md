@@ -3,6 +3,10 @@
 가상환경 설치 리스트
 pip install python-dotenv
 
+fastapi 실행 명령어 , json 명령어 축약 필요
+uvicorn app:app --reload
+
+
 .env 필수
 CLIENT_ID
 CLIENT_SECRET
